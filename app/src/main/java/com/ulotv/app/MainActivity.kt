@@ -308,11 +308,19 @@ class MainActivity : Activity() {
         content.addView(label("Player opens when you press Play. Rotate your phone for landscape.", 13f, muted).apply {
             setPadding(0, dp(8), 0, dp(12))
         })
-        val url = if (item.type == "movie") {
-            "https://embedmaster.link/$EMBEDMASTER_ID/movie/${tmdbToImdbPlaceholder(item)}"
+        if (item.type == "movie") {
+            content.addView(label("Preparing movie player…", 14f, muted))
+            request("/movie/${item.id}/external_ids") { ids ->
+                val imdb = ids?.optString("imdb_id", "").orEmpty()
+                if (imdb.startsWith("tt")) addPlayerView(item, "https://embedmaster.link/$EMBEDMASTER_ID/movie/$imdb")
+                else content.addView(label("An IMDb ID wasn't found for this movie, so the player link can't be created.", 13f, muted))
+            }
         } else {
-            "https://embedmaster.link/$EMBEDMASTER_ID/tv/${item.id}/1/1"
+            addPlayerView(item, "https://embedmaster.link/$EMBEDMASTER_ID/tv/${item.id}/1/1")
         }
+    }
+
+    private fun addPlayerView(item: TitleItem, url: String) {
         val web = android.webkit.WebView(this).apply {
             setBackgroundColor(Color.BLACK)
             settings.javaScriptEnabled = true
@@ -327,11 +335,6 @@ class MainActivity : Activity() {
             setPadding(0, dp(10), 0, dp(10))
         })
         content.addView(button("← Back to details", { showDetails(item) }))
-    }
-
-    private fun tmdbToImdbPlaceholder(item: TitleItem): String {
-        // TMDB movie IDs are not IMDb IDs. Resolve the IMDb ID from TMDB before playback.
-        return "tt0000000"
     }
 
     private fun searchTitles(query: String) {
