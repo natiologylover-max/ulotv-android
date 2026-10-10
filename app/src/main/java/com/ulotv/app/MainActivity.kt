@@ -42,10 +42,13 @@ class MainActivity : Activity() {
     private var currentTab = "Home"
     private var selected: TitleItem? = null
     private val saved = linkedMapOf<Int, TitleItem>()
-    private val ink = Color.rgb(8, 10, 17)
-    private val panel = Color.rgb(22, 25, 37)
-    private val muted = Color.rgb(166, 174, 192)
-    private val accent = Color.rgb(116, 91, 255)
+    // A restrained cinematic palette: near-black surfaces, crisp white type, violet accent.
+    private val ink = Color.rgb(7, 9, 15)
+    private val panel = Color.rgb(19, 23, 34)
+    private val panelRaised = Color.rgb(29, 34, 49)
+    private val muted = Color.rgb(157, 166, 185)
+    private val accent = Color.rgb(125, 96, 255)
+    private val accentSoft = Color.rgb(42, 34, 78)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,55 +79,103 @@ class MainActivity : Activity() {
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(14), dp(18), dp(10))
+            setPadding(dp(20), dp(16), dp(20), dp(14))
             setBackgroundColor(ink)
         }
         val brandRow = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
-        val brand = label("ULO", 25f, Color.WHITE, true)
-        val tv = label(" TV", 25f, accent, true)
-        brandRow.addView(brand); brandRow.addView(tv)
+        val mark = TextView(this).apply {
+            text = "U"; textSize = 17f; setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            background = bg(accent, 11)
+        }
+        brandRow.addView(mark, LinearLayout.LayoutParams(dp(36), dp(36)))
+        val brandText = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), 0, 0, 0)
+        }
+        brandText.addView(label("ULO TV", 18f, Color.WHITE, true))
+        brandText.addView(label("CINEMA, YOUR WAY", 9f, muted, true))
+        brandRow.addView(brandText)
         brandRow.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        brandRow.addView(label("●", 10f, Color.rgb(70, 220, 150), true))
+        val live = TextView(this).apply {
+            text = "  ●  ONLINE  "; textSize = 9f; setTextColor(Color.rgb(101, 224, 168))
+            typeface = Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
+            background = bg(Color.rgb(20, 44, 39), 20)
+            setPadding(dp(7), dp(8), dp(7), dp(8))
+        }
+        brandRow.addView(live)
         header.addView(brandRow)
-        header.addView(label(title, 23f, Color.WHITE, true).apply {
-            setPadding(0, dp(13), 0, dp(8))
+        header.addView(label(title, 26f, Color.WHITE, true).apply {
+            setPadding(0, dp(20), 0, dp(4))
         })
+        header.addView(label(
+            when (title) {
+                "Discover" -> "Find something worth watching."
+                "Popular Movies" -> "Big stories. Unforgettable nights."
+                "Popular TV Shows" -> "Your next series starts here."
+                "My List" -> "Everything you want to watch, in one place."
+                "Now playing" -> "Settle in and enjoy the show."
+                else -> "Explore the collection."
+            }, 13f, muted
+        ).apply { setPadding(0, 0, 0, dp(14)) })
         if (showSearch) {
+            val searchWrap = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                background = bg(panel, 14); setPadding(dp(14), 0, dp(12), 0)
+            }
+            searchWrap.addView(label("⌕", 24f, muted, true))
             searchBox = EditText(this).apply {
-                hint = "Search movies and TV shows"
+                hint = "Search movies and series"
                 textSize = 14f; setTextColor(Color.WHITE); setHintTextColor(muted)
                 setSingleLine(true)
-                setPadding(dp(14), 0, dp(14), 0)
-                background = bg(panel, 12)
+                setPadding(dp(10), 0, dp(8), 0)
+                background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
             }
-            header.addView(searchBox, LinearLayout.LayoutParams(-1, dp(46)))
+            searchWrap.addView(searchBox, LinearLayout.LayoutParams(0, -1, 1f))
+            searchWrap.addView(label("TMDB", 9f, muted, true))
+            header.addView(searchWrap, LinearLayout.LayoutParams(-1, dp(50)))
             searchBox.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                     if (!s.isNullOrBlank()) searchTitles(s.toString())
+                    else if (currentTab == "Home") showHome()
                 }
                 override fun afterTextChanged(s: Editable?) {}
             })
         }
         root.addView(header)
-        val scroll = ScrollView(this).apply { isFillViewport = true }
+        val scroll = ScrollView(this).apply { isFillViewport = true; clipToPadding = false }
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(10), dp(16), dp(18))
+            setPadding(dp(20), dp(8), dp(20), dp(24))
         }
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        val nav = LinearLayout(this).apply {
-            setPadding(dp(8), dp(8), dp(8), dp(8)); setBackgroundColor(panel)
+        val navShell = LinearLayout(this).apply {
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+            setBackgroundColor(Color.rgb(13, 16, 25))
             gravity = Gravity.CENTER
         }
-        listOf("Home", "Movies", "TV Shows", "My List").forEach { item ->
-            val v = label(if (item == currentTab) "●  $item" else item, 12f,
-                if (item == currentTab) Color.WHITE else muted, item == currentTab)
-            v.gravity = Gravity.CENTER
-            v.setPadding(dp(8), dp(12), dp(8), dp(12))
-            nav.addView(v, LinearLayout.LayoutParams(0, -2, 1f))
-            v.setOnClickListener {
+        val navItems = listOf(
+            Pair("Home", "⌂"), Pair("Movies", "▣"),
+            Pair("TV Shows", "▤"), Pair("My List", "♡")
+        )
+        navItems.forEach { entry ->
+            val item = entry.first
+            val selectedNow = item == currentTab
+            val cell = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+                background = if (selectedNow) bg(accentSoft, 14) else android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
+                setPadding(dp(4), dp(7), dp(4), dp(7))
+            }
+            cell.addView(label(entry.second, 19f, if (selectedNow) Color.WHITE else muted, selectedNow).apply {
+                gravity = Gravity.CENTER
+            })
+            cell.addView(label(item, 10f, if (selectedNow) Color.WHITE else muted, selectedNow).apply {
+                gravity = Gravity.CENTER; setPadding(0, dp(3), 0, 0)
+            })
+            navShell.addView(cell, LinearLayout.LayoutParams(0, dp(52), 1f))
+            cell.setOnClickListener {
                 currentTab = item
                 when (item) {
                     "Home" -> showHome()
@@ -134,7 +185,7 @@ class MainActivity : Activity() {
                 }
             }
         }
-        root.addView(nav)
+        root.addView(navShell)
         setContentView(root)
     }
 
@@ -163,16 +214,16 @@ class MainActivity : Activity() {
 
     private fun showHome() {
         currentTab = "Home"; setup("Discover")
-        content.addView(label("Your next favorite starts here", 16f, muted))
-        content.addView(label("TRENDING THIS WEEK", 12f, accent, true).apply {
+        content.addView(label("A world of stories, picked for you", 15f, muted))
+        content.addView(label("TRENDING THIS WEEK", 13f, Color.WHITE, true).apply {
             setPadding(0, dp(22), 0, dp(10))
         })
         loadRow("/trending/all/week", "all", true)
-        content.addView(label("POPULAR MOVIES", 12f, accent, true).apply {
+        content.addView(label("POPULAR MOVIES", 13f, Color.WHITE, true).apply {
             setPadding(0, dp(22), 0, dp(10))
         })
         loadRow("/movie/popular", "movie", false)
-        content.addView(label("POPULAR SERIES", 12f, accent, true).apply {
+        content.addView(label("POPULAR SERIES", 13f, Color.WHITE, true).apply {
             setPadding(0, dp(22), 0, dp(10))
         })
         loadRow("/tv/popular", "tv", false)
@@ -207,16 +258,16 @@ class MainActivity : Activity() {
                 val item = parse(obj, type)
                 val card = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
-                    setPadding(dp(4), dp(2), dp(8), dp(4))
+                    setPadding(dp(3), dp(3), dp(10), dp(6))
                 }
                 val poster = ImageView(this).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     background = bg(panel, 10)
                 }
-                card.addView(poster, LinearLayout.LayoutParams(dp(122), dp(164)))
+                card.addView(poster, LinearLayout.LayoutParams(dp(132), dp(178)))
                 card.addView(label(item.name, 12f, Color.WHITE, true).apply {
                     maxLines = 2; setPadding(0, dp(6), 0, 0)
-                }, LinearLayout.LayoutParams(dp(122), -2))
+                }, LinearLayout.LayoutParams(dp(132), -2))
                 card.setOnClickListener { showDetails(item) }
                 row.addView(card)
                 if (item.poster.isNotBlank()) loadPoster(item.poster) { bitmap -> poster.setImageBitmap(bitmap) }
@@ -283,7 +334,7 @@ class MainActivity : Activity() {
             showDetails(item)
         }), LinearLayout.LayoutParams(0, -2, 1f))
         content.addView(actions)
-        content.addView(label("MORE LIKE THIS", 12f, accent, true).apply { setPadding(0, dp(24), 0, dp(8)) })
+        content.addView(label("MORE LIKE THIS", 13f, Color.WHITE, true).apply { setPadding(0, dp(24), 0, dp(8)) })
         val similarType = item.type
         request("/${similarType}/${item.id}/similar?language=en-US&page=1") { json ->
             val results = json?.optJSONArray("results") ?: JSONArray()
