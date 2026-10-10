@@ -93,7 +93,7 @@ class MainActivity : Activity() {
             searchBox = EditText(this).apply {
                 hint = "Search movies and TV shows"
                 textSize = 14f; setTextColor(Color.WHITE); setHintTextColor(muted)
-                singleLine = true
+                setSingleLine(true)
                 setPadding(dp(14), 0, dp(14), 0)
                 background = bg(panel, 12)
             }
@@ -107,7 +107,7 @@ class MainActivity : Activity() {
             })
         }
         root.addView(header)
-        val scroll = ScrollView(this).apply { fillViewport = true }
+        val scroll = ScrollView(this).apply { isFillViewport = true }
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(10), dp(16), dp(18))
@@ -238,7 +238,7 @@ class MainActivity : Activity() {
         info.addView(label("★ ${item.rating}  •  ${item.year}  •  ${item.type.uppercase()}", 12f, muted).apply {
             setPadding(0, dp(5), 0, dp(8))
         })
-        info.addView(label(item.overview.ifBlank { "Open to see details and watch options." }, 12f, muted).apply { maxLines = 3 })
+        info.addView(label(item.overview.ifBlank { "Open to see the full synopsis." }, 12f, muted).apply { maxLines = 3 })
         info.addView(button("View details", { showDetails(item) }, true).apply {
             setPadding(dp(12), dp(8), dp(12), dp(8))
         })
@@ -331,7 +331,7 @@ class MainActivity : Activity() {
             loadUrl(url)
         }
         content.addView(web, LinearLayout.LayoutParams(-1, dp(240)))
-        content.addView(label("If the video doesn't load, the provider may not have a stream for this title.", 12f, muted).apply {
+        content.addView(label("If playback doesn't load, check your connection and try again.", 12f, muted).apply {
             setPadding(0, dp(10), 0, dp(10))
         })
         content.addView(button("← Back to details", { showDetails(item) }))
