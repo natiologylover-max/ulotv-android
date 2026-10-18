@@ -106,7 +106,7 @@ class MainActivity : Activity() {
         if (searchBar && searchMode) {
             search = EditText(this).apply {
                 hint = "Titles, genres, people"; textSize = 14f; setTextColor(Color.WHITE)
-                setHintTextColor(textMuted); singleLine = true; setPadding(d(15), 0, d(15), 0)
+                setHintTextColor(textMuted); setSingleLine(true); setPadding(d(15), 0, d(15), 0)
                 background = shape(surface, 14)
             }
             top.addView(search, LinearLayout.LayoutParams(-1, d(48)))
@@ -220,6 +220,25 @@ class MainActivity : Activity() {
         loadRow("/movie/popular", "movie", false)
         sectionTitle("Binge-worthy series", "SERIES")
         loadRow("/tv/popular", "tv", false)
+    }
+
+    private fun loadTrending() {
+        tab = "Home"
+        searchMode = false
+        shell("Trending now", "Popular movies and series this week", false)
+        val progress = txt("Finding what's trending…", 13f, textMuted)
+        progress.setPadding(d(20), d(12), d(20), d(12))
+        content.addView(progress)
+        api("/trending/all/week?language=en-US&page=1") { json ->
+            content.removeView(progress)
+            val arr = json?.optJSONArray("results") ?: JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                val type = o.optString("media_type").let { if (it == "tv" || it == "movie") it else "movie" }
+                categoryCard(parse(o, type))
+            }
+            if (arr.length() == 0) content.addView(txt("Could not load trending titles. Check your connection.", 13f, textMuted))
+        }
     }
 
     private fun sectionTitle(title: String, tag: String) {
