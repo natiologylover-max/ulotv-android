@@ -4,13 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
     paths-ignore:
       - '**.md'
-  push_tags:
-    tags: ['v*']
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -38,7 +37,7 @@ jobs:
         uses: gradle/gradle-build-action@v3
         with:
           gradle-version: '8.9'
-          arguments: ":app:assembleDebug -PsiteUrl=${{ vars.ULOTV_BASE_URL || 'https://ulotv.xo.je/' }}"
+          arguments: ":app:assembleDebug -PsiteUrl=${{ vars.ULOTV_BASE_URL || 'https://ethiohub.site.je/' }}"
 
       - name: Upload installable APK artifact
         uses: actions/upload-artifact@v4
