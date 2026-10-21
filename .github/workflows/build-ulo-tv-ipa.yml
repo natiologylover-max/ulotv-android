@@ -1,0 +1,54 @@
+name: Build ULO TV unsigned IPA
+
+on:
+  push:
+    branches:
+      - build-ulo-tv-ios
+    paths:
+      - "ios-build/**"
+      - ".github/workflows/build-ulo-tv-ipa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build iOS app (unsigned, for ESign)
+        run: |
+          set -euo pipefail
+          cd ios-build
+          xcodebuild \
+            -project "ULOTV.xcodeproj" \
+            -scheme "ULO TV" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/DerivedData/Build/Products/Release-iphoneos/ULO TV.app"
+          test -d "$APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/ULO TV.app"
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$GITHUB_WORKSPACE/ULO-TV-unsigned.ipa" Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ULO-TV-unsigned-IPA
+          path: ULO-TV-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
